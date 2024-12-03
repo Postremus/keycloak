@@ -19,6 +19,7 @@ package org.keycloak.models.jpa.entities;
 
 import jakarta.persistence.Access;
 import jakarta.persistence.AccessType;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -26,8 +27,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Pedro Igor
@@ -88,6 +94,9 @@ public class IdentityProviderEntity {
     @Column(name="VALUE", columnDefinition = "TEXT")
     @CollectionTable(name="IDENTITY_PROVIDER_CONFIG", joinColumns={ @JoinColumn(name="IDENTITY_PROVIDER_ID") })
     private Map<String, String> config;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy="identityProvider")
+    private Set<IdentityProviderDomainEntity> domains = new HashSet<>();
 
     public String getInternalId() {
         return this.internalId;
@@ -191,6 +200,25 @@ public class IdentityProviderEntity {
 
     public void setConfig(Map<String, String> config) {
         this.config = config;
+    }
+
+    public Set<IdentityProviderDomainEntity> getDomains() {
+        if (this.domains == null) {
+            this.domains = new HashSet<>();
+        }
+        return this.domains;
+    }
+
+    public void setDomains(Set<IdentityProviderDomainEntity> domains) {
+        this.domains = domains;
+    }
+
+    public void addDomain(IdentityProviderDomainEntity domainEntity) {
+        this.domains.add(domainEntity);
+    }
+
+    public void removeDomain(IdentityProviderDomainEntity domainEntity) {
+        this.domains.remove(domainEntity);
     }
 
     public boolean isAddReadTokenRoleOnCreate() {

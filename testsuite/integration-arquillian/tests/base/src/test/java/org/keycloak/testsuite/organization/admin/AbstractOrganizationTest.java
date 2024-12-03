@@ -36,6 +36,7 @@ import org.keycloak.admin.client.resource.OrganizationResource;
 import org.keycloak.models.OrganizationModel;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.models.OrganizationModel.IdentityProviderRedirectMode;
+import org.keycloak.representations.idm.IdentityProviderDomainRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.GroupRepresentation;
@@ -136,8 +137,9 @@ public abstract class AbstractOrganizationTest extends AbstractAdminTest  {
             assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
             id = ApiUtil.getCreatedId(response);
         }
-        // set the idp domain to the first domain used to create the org.
-        broker.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, orgDomains[0]);
+        for (String orgDomain : orgDomains) {
+            broker.addDomain(new IdentityProviderDomainRepresentation(orgDomain));
+        }
         broker.getConfig().put(IdentityProviderRedirectMode.EMAIL_MATCH.getKey(), Boolean.TRUE.toString());
         testRealm.identityProviders().create(broker).close();
         testCleanup.addCleanup(testRealm.identityProviders().get(broker.getAlias())::remove);

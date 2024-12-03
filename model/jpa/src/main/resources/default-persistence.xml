@@ -40,6 +40,7 @@
         <class>org.keycloak.models.jpa.entities.UserAttributeEntity</class>
         <class>org.keycloak.models.jpa.entities.UserRoleMappingEntity</class>
         <class>org.keycloak.models.jpa.entities.IdentityProviderEntity</class>
+        <class>org.keycloak.models.jpa.entities.IdentityProviderDomainEntity</class>
         <class>org.keycloak.models.jpa.entities.IdentityProviderMapperEntity</class>
         <class>org.keycloak.models.jpa.entities.ProtocolMapperEntity</class>
         <class>org.keycloak.models.jpa.entities.UserConsentEntity</class>

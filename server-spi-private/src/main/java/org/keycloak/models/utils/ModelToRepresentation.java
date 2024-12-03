@@ -873,7 +873,17 @@ public class ModelToRepresentation {
             providerRep.setOrganizationId(identityProviderModel.getOrganizationId());
         }
 
+
+        identityProviderModel.getDomains().stream().filter(Objects::nonNull).map(ModelToRepresentation::toRepresentation)
+             .forEach(providerRep::addDomain);
+
         return providerRep;
+    }
+
+    public static IdentityProviderDomainRepresentation toRepresentation(IdentityProviderDomainModel model) {
+        IdentityProviderDomainRepresentation representation = new IdentityProviderDomainRepresentation();
+        representation.setName(model.getName());
+        return representation;
     }
 
     public static ProtocolMapperRepresentation toRepresentation(ProtocolMapperModel model) {

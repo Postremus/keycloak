@@ -38,6 +38,7 @@ import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.forms.login.freemarker.model.AuthenticationContextBean;
 import org.keycloak.forms.login.freemarker.model.IdentityProviderBean;
 import org.keycloak.http.HttpRequest;
+import org.keycloak.models.IdentityProviderDomainModel;
 import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
@@ -209,13 +210,14 @@ public class OrganizationAuthenticator extends IdentityProviderAuthenticator {
         List<IdentityProviderModel> brokers = organization.getIdentityProviders().toList();
 
         for (IdentityProviderModel broker : brokers) {
-            if (IdentityProviderRedirectMode.EMAIL_MATCH.isSet(broker)) {
-                String idpDomain = broker.getConfig().get(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+            if (IdentityProviderRedirectMode.EMAIL_MATCH.isSet(broker) && broker.getDomains() != null) {
+                for (IdentityProviderDomainModel idpDomain : broker.getDomains()) {
 
-                if (domain.equals(idpDomain)) {
-                    // redirect the user using the broker that matches the email domain
-                    redirect(context, broker.getAlias(), username);
-                    return true;
+                    if (domain.equals(idpDomain.getName())) {
+                        // redirect the user using the broker that matches the email domain
+                        redirect(context, broker.getAlias(), username);
+                        return true;
+                    }
                 }
             }
         }

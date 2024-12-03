@@ -17,7 +17,6 @@
 
 package org.keycloak.organization.jpa;
 
-import static org.keycloak.models.OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE;
 import static org.keycloak.models.UserModel.EMAIL;
 import static org.keycloak.models.UserModel.FIRST_NAME;
 import static org.keycloak.models.UserModel.LAST_NAME;
@@ -438,9 +437,9 @@ public class JpaOrganizationProvider implements OrganizationProvider {
             return false;
         }
 
-        // clear the organization id and any domain assigned to the IDP.
+        // clear the organization id and any domains assigned to the IDP.
         identityProvider.setOrganizationId(null);
-        identityProvider.getConfig().remove(ORGANIZATION_DOMAIN_ATTRIBUTE);
+        identityProvider.setDomains(null);
         session.identityProviders().update(identityProvider);
 
         return true;

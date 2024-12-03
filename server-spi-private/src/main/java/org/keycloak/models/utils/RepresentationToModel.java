@@ -76,6 +76,7 @@ import org.keycloak.models.ClientScopeModel;
 import org.keycloak.models.Constants;
 import org.keycloak.models.FederatedIdentityModel;
 import org.keycloak.models.GroupModel;
+import org.keycloak.models.IdentityProviderDomainModel;
 import org.keycloak.models.IdentityProviderMapperModel;
 import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
@@ -106,6 +107,7 @@ import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.FederatedIdentityRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
+import org.keycloak.representations.idm.IdentityProviderDomainRepresentation;
 import org.keycloak.representations.idm.IdentityProviderMapperRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.OrganizationDomainRepresentation;
@@ -881,6 +883,14 @@ public class RepresentationToModel {
         identityProviderModel.setOrganizationId(representation.getOrganizationId());
         identityProviderModel.setConfig(removeEmptyString(representation.getConfig()));
 
+
+        identityProviderModel.setDomains(ofNullable(representation.getDomains()).orElse(Set.of()).stream()
+                                                     .filter(Objects::nonNull)
+                                                     .filter(domain -> StringUtil.isNotBlank(domain.getName()))
+                                                     .map(RepresentationToModel::toModel)
+                                                     .collect(Collectors.toSet()));
+
+
         String flowAlias = representation.getFirstBrokerLoginFlowAlias();
         if (flowAlias == null || flowAlias.trim().isEmpty()) {
             identityProviderModel.setFirstBrokerLoginFlowId(null);
@@ -906,6 +916,11 @@ public class RepresentationToModel {
         identityProviderModel.validate(realm);
 
         return identityProviderModel;
+    }
+
+
+    public static IdentityProviderDomainModel toModel(IdentityProviderDomainRepresentation domainRepresentation) {
+        return new IdentityProviderDomainModel(domainRepresentation.getName());
     }
 
     public static ProtocolMapperModel toModel(ProtocolMapperRepresentation rep) {
@@ -1665,16 +1680,17 @@ public class RepresentationToModel {
                 throw new IllegalArgumentException("Organization associated with broker does not exist");
             }
 
-            String domain = representation.getConfig().get(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
-
-            if (StringUtil.isBlank(domain)) {
-                representation.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
-            } else if (org.getDomains().map(OrganizationDomainModel::getName).noneMatch(domain::equals)) {
-                throw new IllegalArgumentException("Domain does not match any domain from the organization");
-            }
-
             // make sure the link to an organization does not change
             representation.setOrganizationId(orgId);
+
+            if (representation.getDomains() != null) {
+                representation.setDomains(representation.getDomains().stream().filter(d -> StringUtil.isNotBlank(d.getName())).collect(Collectors.toSet()));
+                for (IdentityProviderDomainRepresentation domain : representation.getDomains()) {
+                    if (org.getDomains().map(OrganizationDomainModel::getName).noneMatch(dn -> domain.getName().equals(dn))) {
+                        throw new IllegalArgumentException("Domain does not match any domain from the organization");
+                    }
+                }
+            }
         }
     }
 
@@ -1689,7 +1705,7 @@ public class RepresentationToModel {
         model.setRedirectUrl(rep.getRedirectUrl());
         model.setDescription(rep.getDescription());
         model.setAttributes(rep.getAttributes());
-        model.setDomains(ofNullable(rep.getDomains()).orElse(Set.of()).stream()
+model.setDomains(ofNullable(rep.getDomains()).orElse(Set.of()).stream()
                 .filter(Objects::nonNull)
                 .filter(domain -> StringUtil.isNotBlank(domain.getName()))
                 .map(RepresentationToModel::toModel)

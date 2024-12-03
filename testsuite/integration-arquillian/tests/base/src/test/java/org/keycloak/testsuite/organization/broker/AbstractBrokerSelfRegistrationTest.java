@@ -44,6 +44,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.representations.idm.ErrorRepresentation;
 import org.keycloak.representations.idm.FederatedIdentityRepresentation;
+import org.keycloak.representations.idm.IdentityProviderDomainRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.OrganizationDomainRepresentation;
 import org.keycloak.representations.idm.OrganizationRepresentation;
@@ -90,7 +91,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
     public void testIdentityFirstIfUserNotExistsAndEmailMatchOrgDomain() {
         OrganizationResource organization = testRealm().organizations().get(createOrganization().getId());
         IdentityProviderRepresentation idpRep = organization.identityProviders().getIdentityProviders().get(0);
-        idpRep.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idpRep.setDomains(null);
         testRealm().identityProviders().get(idpRep.getAlias()).update(idpRep);
 
         openIdentityFirstLoginPage("user@neworg.org", false, null, false, false);
@@ -108,7 +109,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         OrganizationResource organization = testRealm().organizations().get(createOrganization().getId());
         IdentityProviderRepresentation idpRep = organization.identityProviders().getIdentityProviders().get(0);
         idpRep.setHideOnLogin(false);
-        idpRep.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idpRep.setDomains(null);
         testRealm().identityProviders().get(idpRep.getAlias()).update(idpRep);
 
         openIdentityFirstLoginPage("user@neworg.org", false, null, false, false);
@@ -127,7 +128,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         OrganizationResource organization = testRealm().organizations().get(createOrganization().getId());
         IdentityProviderRepresentation idpRep = organization.identityProviders().getIdentityProviders().get(0);
         idpRep.getConfig().remove(IdentityProviderRedirectMode.EMAIL_MATCH.getKey());
-        idpRep.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idpRep.setDomains(null);
         testRealm().identityProviders().get(idpRep.getAlias()).update(idpRep);
 
         openIdentityFirstLoginPage("user@neworg.org", false, null, false, false);
@@ -146,7 +147,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         representation.addDomain(new OrganizationDomainRepresentation("other.org"));
         organization.update(representation).close();
         IdentityProviderRepresentation idp = organization.identityProviders().get(bc.getIDPAlias()).toRepresentation();
-        idp.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, "neworg.org");
+        idp.addDomain(new IdentityProviderDomainRepresentation("neworg.org"));
         // set a domain to the existing broker
         testRealm().identityProviders().get(bc.getIDPAlias()).update(idp);
 
@@ -154,7 +155,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         idp.setAlias("second-idp");
         idp.setInternalId(null);
         idp.setHideOnLogin(false);
-        idp.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idp.setDomains(null);
         // create a second broker without a domain set
         testRealm().identityProviders().create(idp).close();
         getCleanup().addCleanup(testRealm().identityProviders().get("second-idp")::remove);
@@ -186,7 +187,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
                 ).close();
         OrganizationResource organization = testRealm().organizations().get(createOrganization().getId());
         IdentityProviderRepresentation idpRep = organization.identityProviders().getIdentityProviders().get(0);
-        idpRep.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idpRep.setDomains(null);
         testRealm().identityProviders().get(idpRep.getAlias()).update(idpRep);
 
         openIdentityFirstLoginPage("user@neworg.org", false, null, false, false);
@@ -310,7 +311,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         secondIdp.setAlias("second-idp");
         secondIdp.setInternalId(null);
         secondIdp.setHideOnLogin(false);
-        secondIdp.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        secondIdp.setDomains(null);
         testRealm().identityProviders().create(secondIdp).close();
         getCleanup().addCleanup(testRealm().identityProviders().get("second-idp")::remove);
         organization.identityProviders().addIdentityProvider(secondIdp.getAlias()).close();
@@ -394,7 +395,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         OrganizationResource organization = testRealm().organizations().get(createOrganization().getId());
         OrganizationIdentityProviderResource idp = organization.identityProviders().get(bc.getIDPAlias());
         IdentityProviderRepresentation idpRep = idp.toRepresentation();
-        idpRep.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, "neworg.org");
+        idpRep.addDomain(new IdentityProviderDomainRepresentation("neworg.org"));
         testRealm().identityProviders().get(idpRep.getAlias()).update(idpRep);
 
         // add the member for the first time
@@ -445,11 +446,11 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
     public void testRedirectToIdentityProviderAssociatedWithOrganizationDomain() {
         OrganizationResource organization = testRealm().organizations().get(createOrganization().getId());
         IdentityProviderRepresentation idp = organization.identityProviders().get(bc.getIDPAlias()).toRepresentation();
-        idp.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, "neworg.org");
+        idp.addDomain(new IdentityProviderDomainRepresentation("neworg.org"));
         testRealm().identityProviders().get(bc.getIDPAlias()).update(idp);
         idp.setAlias("second-idp");
         idp.setInternalId(null);
-        idp.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idp.setDomains(null);
         testRealm().identityProviders().create(idp).close();
         getCleanup().addCleanup(testRealm().identityProviders().get("second-idp")::remove);
         organization.identityProviders().addIdentityProvider(idp.getAlias()).close();
@@ -470,7 +471,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         OrganizationResource organization = testRealm().organizations().get(createOrganization().getId());
         IdentityProviderRepresentation idp = organization.identityProviders().get(bc.getIDPAlias()).toRepresentation();
         idp.setHideOnLogin(false);
-        idp.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, "neworg.org");
+        idp.addDomain(new IdentityProviderDomainRepresentation("neworg.org"));
         idp.getConfig().put(IdentityProviderRedirectMode.EMAIL_MATCH.getKey(), Boolean.FALSE.toString());
         testRealm().identityProviders().get(bc.getIDPAlias()).update(idp);
 
@@ -487,13 +488,13 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         OrganizationResource org0 = testRealm().organizations().get(createOrganization(org0Name).getId());
         IdentityProviderRepresentation org0Broker = org0.identityProviders().getIdentityProviders().get(0);
         org0Broker.setHideOnLogin(false);
-        org0Broker.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        org0Broker.setDomains(null);
         testRealm().identityProviders().get(org0Broker.getAlias()).update(org0Broker);
         String org1Name = "org-1";
         OrganizationResource org1 = testRealm().organizations().get(createOrganization(org1Name).getId());
         IdentityProviderRepresentation org1Broker = org1.identityProviders().getIdentityProviders().get(0);
         org1Broker.setHideOnLogin(false);
-        org1Broker.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        org1Broker.setDomains(null);
         org1Broker.getConfig().remove(IdentityProviderRedirectMode.EMAIL_MATCH.getKey());
         testRealm().identityProviders().get(org1Broker.getAlias()).update(org1Broker);
 
@@ -515,7 +516,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
     public void testLoginUsingBrokerWithoutDomain() {
         OrganizationResource organization = testRealm().organizations().get(createOrganization().getId());
         IdentityProviderRepresentation idp = organization.identityProviders().get(bc.getIDPAlias()).toRepresentation();
-        idp.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, "neworg.org");
+        idp.addDomain(new IdentityProviderDomainRepresentation("neworg.org"));
         // set a domain to the existing broker
         testRealm().identityProviders().get(bc.getIDPAlias()).update(idp);
 
@@ -523,7 +524,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         idp.setAlias("second-idp");
         idp.setInternalId(null);
         idp.setHideOnLogin(false);
-        idp.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idp.setDomains(null);
         // create a second broker without a domain set
         testRealm().identityProviders().create(idp).close();
         getCleanup().addCleanup(testRealm().identityProviders().get("second-idp")::remove);
@@ -551,7 +552,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         representation.addDomain(new OrganizationDomainRepresentation("other.org"));
         organization.update(representation).close();
         IdentityProviderRepresentation idp = organization.identityProviders().get(bc.getIDPAlias()).toRepresentation();
-        idp.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, "neworg.org");
+        idp.addDomain(new IdentityProviderDomainRepresentation("neworg.org"));
         // set a domain to the existing broker
         testRealm().identityProviders().get(bc.getIDPAlias()).update(idp);
 
@@ -559,7 +560,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         idp.setAlias("second-idp");
         idp.setInternalId(null);
         idp.setHideOnLogin(false);
-        idp.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, "other.org");
+        idp.addDomain(new IdentityProviderDomainRepresentation("other.org"));
         // create a second broker without a domain set
         testRealm().identityProviders().create(idp).close();
         getCleanup().addCleanup(testRealm().identityProviders().get("second-idp")::remove);
@@ -585,7 +586,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         representation.addDomain(new OrganizationDomainRepresentation("other.org"));
         organization.update(representation).close();
         IdentityProviderRepresentation idp = organization.identityProviders().get(bc.getIDPAlias()).toRepresentation();
-        idp.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, "neworg.org");
+        idp.addDomain(new IdentityProviderDomainRepresentation("neworg.org"));
         // set a domain to the existing broker
         testRealm().identityProviders().get(bc.getIDPAlias()).update(idp);
 
@@ -632,7 +633,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
 
         // make sure the user can select this idp from the organization when authenticating
         idpRep.setHideOnLogin(false);
-        idpRep.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idpRep.setDomains(null);
         testRealm().identityProviders().get(idpRep.getAlias()).update(idpRep);
 
         // create a user to the provider realm using an email that does not share the same domain as the org
@@ -657,7 +658,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
 
         // make sure the user can select this idp from the organization when authenticating
         idpRep.setHideOnLogin(false);
-        idpRep.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idpRep.setDomains(null);
         testRealm().identityProviders().get(idpRep.getAlias()).update(idpRep);
 
         // create a user to the provider realm using an email that does not share the same domain as the org
@@ -689,7 +690,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         assertBrokerRegistration(organization, bc.getUserLogin(), email);
 
         IdentityProviderRepresentation idpRep = organization.identityProviders().getIdentityProviders().get(0);
-        idpRep.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idpRep.setDomains(null);
         testRealm().identityProviders().get(idpRep.getAlias()).update(idpRep);
         UserRepresentation user = getUserRepresentation(email);
         user.setEmail("user@someother.com");
@@ -702,7 +703,7 @@ public abstract class AbstractBrokerSelfRegistrationTest extends AbstractOrganiz
         String email = bc.getUserEmail();
         assertBrokerRegistration(organization, bc.getUserLogin(), email);
         IdentityProviderRepresentation idpRep = organization.identityProviders().getIdentityProviders().get(0);
-        assertEquals(email.substring(email.indexOf('@') + 1), idpRep.getConfig().get(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE));
+        assertEquals(email.substring(email.indexOf('@') + 1), idpRep.getDomains().iterator().next().getName());
         UserRepresentation user = getUserRepresentation(email);
         user.setEmail("user@someother.com");
         try {

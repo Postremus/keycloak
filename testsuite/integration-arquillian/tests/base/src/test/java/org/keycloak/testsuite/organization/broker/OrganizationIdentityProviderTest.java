@@ -17,18 +17,24 @@
 
 package org.keycloak.testsuite.organization.broker;
 
+import java.util.Set;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertNotNull;
-import static org.keycloak.models.OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE;
+import static org.junit.Assert.assertNull;
 
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.keycloak.admin.client.resource.IdentityProviderResource;
@@ -38,6 +44,7 @@ import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.OrganizationModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.organization.OrganizationProvider;
+import org.keycloak.representations.idm.IdentityProviderDomainRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.OrganizationRepresentation;
 import org.keycloak.testsuite.organization.admin.AbstractOrganizationTest;
@@ -46,9 +53,9 @@ public class OrganizationIdentityProviderTest extends AbstractOrganizationTest {
 
     @Test
     public void testUpdate() {
-        OrganizationRepresentation organization = createOrganization();
+        OrganizationRepresentation organization = createOrganization(organizationName, organizationName+".org", organizationName+".net");
         OrganizationIdentityProviderResource orgIdPResource = testRealm().organizations().get(organization.getId())
-                .identityProviders().get(bc.getIDPAlias());
+                                                                         .identityProviders().get(bc.getIDPAlias());
         IdentityProviderRepresentation expected = orgIdPResource.toRepresentation();
 
         // organization link set
@@ -78,27 +85,40 @@ public class OrganizationIdentityProviderTest extends AbstractOrganizationTest {
         actual = idpResource.toRepresentation();
         // the link to the organization should not change
         Assert.assertEquals(actual.getOrganizationId(), organization.getId());
+        assertThat(actual.getDomains(), hasSize(2));
 
-        String domain = actual.getConfig().get(ORGANIZATION_DOMAIN_ATTRIBUTE);
-
+        String domain = actual.getDomains().iterator().next().getName();
         assertNotNull(domain);
-        actual.getConfig().put(ORGANIZATION_DOMAIN_ATTRIBUTE, " ");
+
+        actual.addDomain(new IdentityProviderDomainRepresentation(" "));
         idpResource.update(actual);
         actual = idpResource.toRepresentation();
-        // domain removed
-        Assert.assertNull(actual.getConfig().get(ORGANIZATION_DOMAIN_ATTRIBUTE));
+        // empty string is not a valid domain, gets removed, still only two
+        assertThat(actual.getDomains(), hasSize(2));
 
-        actual.getConfig().put(ORGANIZATION_DOMAIN_ATTRIBUTE, domain);
+
+        actual.setDomains(Set.of(new IdentityProviderDomainRepresentation(" ")));
+        idpResource.update(actual);
+        actual = idpResource.toRepresentation();
+        // empty string is not a valid domain, no other domain set
+        assertNull(actual.getDomains());
+
+
+
+        actual.addDomain(new IdentityProviderDomainRepresentation(" "));
+        actual.addDomain(new IdentityProviderDomainRepresentation(organizationName+".org"));
+        actual.addDomain(new IdentityProviderDomainRepresentation(organizationName+".net"));
         idpResource.update(actual);
         actual = idpResource.toRepresentation();
         // domain set again
-        Assert.assertNotNull(actual.getConfig().get(ORGANIZATION_DOMAIN_ATTRIBUTE));
+        assertThat(actual.getDomains(), hasSize(2));
 
-        actual.getConfig().remove(ORGANIZATION_DOMAIN_ATTRIBUTE);
+        // remove any of the currently set domains
+        actual.getDomains().remove(actual.getDomains().iterator().next());
         idpResource.update(actual);
         actual = idpResource.toRepresentation();
-        // domain removed
-        Assert.assertNull(actual.getConfig().get(ORGANIZATION_DOMAIN_ATTRIBUTE));
+        // domain removed, one left
+        assertThat(actual.getDomains(), hasSize(1));
     }
 
     @Test
@@ -109,7 +129,7 @@ public class OrganizationIdentityProviderTest extends AbstractOrganizationTest {
 
         //remove Org related stuff from the template
         idpTemplate.setOrganizationId(null);
-        idpTemplate.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idpTemplate.getDomains().clear();
         idpTemplate.getConfig().remove(OrganizationModel.IdentityProviderRedirectMode.EMAIL_MATCH.getKey());
 
         for (int i = 0; i < 5; i++) {
@@ -188,7 +208,7 @@ public class OrganizationIdentityProviderTest extends AbstractOrganizationTest {
         IdentityProviderRepresentation idpRep = testRealm().identityProviders().get(bc.getIDPAlias()).toRepresentation();
         // broker no longer linked to the org
         Assert.assertNull(idpRep.getOrganizationId());
-        Assert.assertNull(idpRep.getConfig().get(ORGANIZATION_DOMAIN_ATTRIBUTE));
+        assertThat(idpRep.getDomains(), nullValue());
     }
 
     @Test
@@ -216,7 +236,7 @@ public class OrganizationIdentityProviderTest extends AbstractOrganizationTest {
         OrganizationResource orgResource = testRealm().organizations().get(orgRep.getId());
         OrganizationIdentityProviderResource orgIdPResource = orgResource.identityProviders().get(bc.getIDPAlias());
         IdentityProviderRepresentation idpRep = orgIdPResource.toRepresentation();
-        idpRep.getConfig().put(ORGANIZATION_DOMAIN_ATTRIBUTE, "unknown.org");
+        idpRep.addDomain(new IdentityProviderDomainRepresentation("unknown.org"));
 
         try {
             testRealm().identityProviders().get(idpRep.getAlias()).update(idpRep);
@@ -266,8 +286,9 @@ public class OrganizationIdentityProviderTest extends AbstractOrganizationTest {
         OrganizationIdentityProviderResource orgIdPResource = orgResource.identityProviders().get("testorg-identity-provider");
         IdentityProviderRepresentation idpRep = orgIdPResource.toRepresentation();
 
-        // IDP should have been assigned to the first domain.
-        assertThat(idpRep.getConfig().get(ORGANIZATION_DOMAIN_ATTRIBUTE), is(equalTo("testorg.com")));
+        // IDP should have been assigned to all domains.
+        assertThat(idpRep.getDomains(), hasSize(2));
+        assertThat(idpRep.getDomains().iterator().next().getName(), is(equalTo("testorg.com")));
 
         // let's update the organization, removing the domain linked to the IDP.
         orgRep.removeDomain(orgRep.getDomain("testorg.com"));
@@ -277,7 +298,7 @@ public class OrganizationIdentityProviderTest extends AbstractOrganizationTest {
 
         // fetch the idp config and check if the domain has been unlinked.
         idpRep = orgIdPResource.toRepresentation();
-        assertThat(idpRep.getConfig().get(ORGANIZATION_DOMAIN_ATTRIBUTE), is(nullValue()));
+        assertThat(idpRep.getDomains(), hasSize(1));
     }
 
     private IdentityProviderRepresentation createRep(String alias, String providerId) {
