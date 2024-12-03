@@ -192,12 +192,14 @@ public final class OrganizationAdapter implements OrganizationModel, JpaModel<Or
                 // remove domain that is not found in the new set.
                 this.entity.removeDomain(domainEntity);
                 // check if any idp is assigned to the removed domain, and unset the domain if that's the case.
-                getIdentityProviders()
-                        .filter(idp -> Objects.equals(domainEntity.getName(), idp.getConfig().get(ORGANIZATION_DOMAIN_ATTRIBUTE)))
-                        .forEach(idp -> {
-                            idp.getConfig().remove(ORGANIZATION_DOMAIN_ATTRIBUTE);
-                            session.identityProviders().update(idp);
-                        });
+                getIdentityProviders().forEach(idp -> {
+                    idp.getDomains().stream()
+                       .filter(idpDomain -> Objects.equals(domainEntity.getName(), idpDomain.getName()))
+                            .findFirst().ifPresent(domain -> {
+                                idp.getDomains().remove(domain);
+                                session.identityProviders().update(idp);
+                       });
+                });
             }
         }
 

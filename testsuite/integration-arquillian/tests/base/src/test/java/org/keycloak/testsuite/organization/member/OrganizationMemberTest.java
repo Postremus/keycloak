@@ -55,6 +55,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.organization.OrganizationProvider;
 import org.keycloak.representations.idm.AbstractUserRepresentation;
+import org.keycloak.representations.idm.IdentityProviderDomainRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.MemberRepresentation;
 import org.keycloak.representations.idm.MembershipType;
@@ -471,7 +472,7 @@ public class OrganizationMemberTest extends AbstractOrganizationTest {
         }
 
         // assign IdP to the org
-        idpRep.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, orgDomain);
+        idpRep.addDomain(new IdentityProviderDomainRepresentation(orgDomain));
         idpRep.getConfig().put(OrganizationModel.IdentityProviderRedirectMode.EMAIL_MATCH.getKey(), Boolean.TRUE.toString());
 
         try (Response response = testRealm().organizations().get(id).identityProviders().addIdentityProvider(idpAlias)) {

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
@@ -38,12 +39,14 @@ import org.keycloak.broker.provider.IdentityProvider;
 import org.keycloak.broker.provider.IdentityProviderFactory;
 import org.keycloak.broker.social.SocialIdentityProvider;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
+import org.keycloak.models.IdentityProviderDomainModel;
 import org.keycloak.models.IdentityProviderMapperModel;
 import org.keycloak.models.IdentityProviderStorageProvider;
 import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelException;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.jpa.entities.IdentityProviderDomainEntity;
 import org.keycloak.models.jpa.entities.IdentityProviderEntity;
 import org.keycloak.models.jpa.entities.IdentityProviderMapperEntity;
 import org.keycloak.models.utils.KeycloakModelUtils;
@@ -105,6 +108,15 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
         entity.setConfig(identityProvider.getConfig());
         entity.setLinkOnly(identityProvider.isLinkOnly());
         entity.setHideOnLogin(identityProvider.isHideOnLogin());
+        if (identityProvider.getDomains() != null) {
+            for (IdentityProviderDomainModel domain : identityProvider.getDomains()) {
+                IdentityProviderDomainEntity domainEntity = new IdentityProviderDomainEntity();
+                domainEntity.setId(KeycloakModelUtils.generateId());
+                domainEntity.setName(domain.getName());
+                domainEntity.setIdentityProvider(entity);
+                entity.addDomain(domainEntity);
+            }
+        }
         em.persist(entity);
         // flush so that constraint violations are flagged and converted into model exception now rather than at the end of the tx.
         em.flush();
@@ -130,6 +142,17 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
         entity.setConfig(identityProvider.getConfig());
         entity.setLinkOnly(identityProvider.isLinkOnly());
         entity.setHideOnLogin(identityProvider.isHideOnLogin());
+        entity.getDomains().clear();
+        if (identityProvider.getDomains() != null) {
+            for (IdentityProviderDomainModel domain : identityProvider.getDomains()) {
+                IdentityProviderDomainEntity domainEntity = new IdentityProviderDomainEntity();
+                domainEntity.setId(KeycloakModelUtils.generateId());
+                domainEntity.setName(domain.getName());
+                domainEntity.setIdentityProvider(entity);
+                entity.addDomain(domainEntity);
+            }
+        }
+
 
         // flush so that constraint violations are flagged and converted into model exception now rather than at the end of the tx.
         em.flush();
@@ -544,6 +567,8 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
         identityProviderModel.setOrganizationId(entity.getOrganizationId());
         identityProviderModel.setStoreToken(entity.isStoreToken());
         identityProviderModel.setAddReadTokenRoleOnCreate(entity.isAddReadTokenRoleOnCreate());
+
+        identityProviderModel.setDomains(entity.getDomains().stream().map(d -> new IdentityProviderDomainModel(d.getName())).collect(Collectors.toSet()));
 
         return identityProviderModel;
     }

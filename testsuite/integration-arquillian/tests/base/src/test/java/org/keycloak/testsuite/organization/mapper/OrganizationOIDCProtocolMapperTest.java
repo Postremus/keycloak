@@ -60,6 +60,7 @@ import org.keycloak.representations.RefreshToken;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
 import org.keycloak.representations.idm.FederatedIdentityRepresentation;
+import org.keycloak.representations.idm.IdentityProviderDomainRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.MemberRepresentation;
 import org.keycloak.representations.idm.OrganizationRepresentation;
@@ -550,7 +551,7 @@ public class OrganizationOIDCProtocolMapperTest extends AbstractOrganizationTest
         driver.manage().timeouts().pageLoadTimeout(Duration.ofDays(1));
         OrganizationResource organization = testRealm().organizations().get(createOrganization().getId());
         IdentityProviderRepresentation idp = organization.identityProviders().get(bc.getIDPAlias()).toRepresentation();
-        idp.getConfig().put(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE, "neworg.org");
+        idp.addDomain(new IdentityProviderDomainRepresentation("neworg.org"));
         testRealm().identityProviders().get(bc.getIDPAlias()).update(idp);
 
         oauth.scope(OAuth2Constants.ORGANIZATION);

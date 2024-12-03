@@ -20,8 +20,10 @@ import org.keycloak.common.Profile;
 import org.keycloak.common.Profile.Feature;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * <p>A model type representing the configuration for identity providers. It provides some common properties and also a {@link org.keycloak.models.IdentityProviderModel#config}
@@ -102,6 +104,8 @@ public class IdentityProviderModel implements Serializable {
      */
     private Map<String, String> config = new HashMap<>();
 
+    private Set<IdentityProviderDomainModel> domains = new HashSet<>();
+
     public IdentityProviderModel() {
     }
 
@@ -123,6 +127,7 @@ public class IdentityProviderModel implements Serializable {
             this.organizationId = model.getOrganizationId();
             this.displayIconClasses = model.getDisplayIconClasses();
             this.hideOnLogin = model.isHideOnLogin();
+            this.domains = new HashSet<>(model.getDomains());
         }
     }
 
@@ -206,6 +211,14 @@ public class IdentityProviderModel implements Serializable {
 
     public void setConfig(Map<String, String> config) {
         this.config = config;
+    }
+
+    public Set<IdentityProviderDomainModel> getDomains() {
+        return domains;
+    }
+
+    public void setDomains(Set<IdentityProviderDomainModel> domains) {
+        this.domains = domains;
     }
 
     public boolean isAddReadTokenRoleOnCreate() {

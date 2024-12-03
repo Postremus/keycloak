@@ -291,7 +291,7 @@ public class OrganizationCacheTest extends AbstractOrganizationTest {
         idpRep.setInternalId(null);
         idpRep.setOrganizationId(null);
         idpRep.setHideOnLogin(false);
-        idpRep.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
+        idpRep.getDomains().clear();
 
         for (int i = 0; i < 10; i++) {
             final String alias = "org-idp-" + i;

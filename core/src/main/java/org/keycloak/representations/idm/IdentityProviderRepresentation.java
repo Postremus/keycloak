@@ -17,7 +17,9 @@
 package org.keycloak.representations.idm;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Pedro Igor
@@ -59,6 +61,7 @@ public class IdentityProviderRepresentation {
     protected String postBrokerLoginFlowAlias;
     protected String organizationId;
     protected Map<String, String> config = new HashMap<>();
+    protected Set<IdentityProviderDomainRepresentation> domains;
 
     public String getInternalId() {
         return this.internalId;
@@ -90,6 +93,28 @@ public class IdentityProviderRepresentation {
 
     public void setConfig(Map<String, String> config) {
         this.config = config;
+    }
+
+    public void addDomain(IdentityProviderDomainRepresentation domain) {
+        if (domains == null) {
+            domains = new HashSet<>();
+        }
+        domains.add(domain);
+    }
+
+    public void removeDomain(IdentityProviderDomainRepresentation domain) {
+        if (domains == null) {
+            return;
+        }
+        domains.remove(domain);
+    }
+
+    public Set<IdentityProviderDomainRepresentation> getDomains() {
+        return domains;
+    }
+
+    public void setDomains(Set<IdentityProviderDomainRepresentation> domains) {
+        this.domains = domains;
     }
 
     public boolean isEnabled() {

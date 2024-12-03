@@ -31,6 +31,7 @@ import org.keycloak.Config.Scope;
 import org.keycloak.broker.provider.BrokeredIdentityContext;
 import org.keycloak.common.Profile;
 import org.keycloak.common.Profile.Feature;
+import org.keycloak.models.IdentityProviderDomainModel;
 import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.OrganizationDomainModel;
@@ -133,10 +134,11 @@ public class OrganizationMemberValidator extends AbstractSimpleValidator impleme
         Set<String> domains = new HashSet<>();
 
         for (IdentityProviderModel broker : brokers) {
-            String domain = broker.getConfig().get(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
-
-            if (domain != null) {
-                domains.add(domain);
+            Set<IdentityProviderDomainModel> identityProviderDomains = broker.getDomains();
+            if (identityProviderDomains != null) {
+                for (IdentityProviderDomainModel identityProviderDomain : identityProviderDomains) {
+                    domains.add(identityProviderDomain.getName());
+                }
             }
         }
 
@@ -163,8 +165,13 @@ public class OrganizationMemberValidator extends AbstractSimpleValidator impleme
             return Set.of();
         }
 
+        Set<String> domains = new HashSet<>();
         // expect the email domain to match the domain set to the broker or none if not set
-        String brokerDomain = broker.getConfig().get(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
-        return  ofNullable(brokerDomain).map(Set::of).orElse(Set.of());
+        if (broker.getDomains() != null) {
+            for (IdentityProviderDomainModel identityProviderDomain : broker.getDomains()) {
+                domains.add(identityProviderDomain.getName());
+            }
+        }
+        return domains;
     }
 }
