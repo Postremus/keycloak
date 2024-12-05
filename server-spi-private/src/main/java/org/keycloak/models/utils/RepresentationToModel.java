@@ -1671,6 +1671,8 @@ public class RepresentationToModel {
                 representation.getConfig().remove(OrganizationModel.ORGANIZATION_DOMAIN_ATTRIBUTE);
             } else if (org.getDomains().map(OrganizationDomainModel::getName).noneMatch(domain::equals)) {
                 throw new IllegalArgumentException("Domain does not match any domain from the organization");
+            } else if (Boolean.parseBoolean(representation.getConfig().get(OrganizationModel.IdentityProviderRedirectMode.EMAIL_MATCH_ANY.getKey()))) {
+                throw new IllegalArgumentException("No domain should be specified when "  + OrganizationModel.IdentityProviderRedirectMode.EMAIL_MATCH_ANY.getKey() + " is enabled.");
             }
 
             // make sure the link to an organization does not change
